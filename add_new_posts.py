@@ -99,6 +99,13 @@ for post in subreddit.stream.submissions(skip_existing=True):
                     continue
                 
                 for perfume in perfumes:
+                    bottle_cost = str(perfume.get("bottle_cost", "")).strip()
+                    
+                    # Skip perfumes that have missing, empty, or "None" bottle_cost
+                    if not bottle_cost or bottle_cost.lower() == "none":
+                        logging.info(f"Skipping perfume without valid bottle_cost in post: {post.title}")
+                        continue
+
                     perfume_name = get_best_match(perfume.get("Perfume_name", ""), json_df["Perfume_name"].tolist())
                     matched_json = json_df[json_df["Perfume_name"] == perfume_name].iloc[0]
                     
@@ -107,18 +114,19 @@ for post in subreddit.stream.submissions(skip_existing=True):
                         "link_flair_text": post.link_flair_text,
                         "Perfume_name": perfume_name,
                         "permalink": post.url,
-                        "bottle_cost": perfume.get("bottle_cost", ""),
+                        "bottle_cost": bottle_cost,
                         "clone_of": matched_json["clone_of"],
                         "official_link": matched_json["official_link"],
                         "official_availability": matched_json["official_availability"],
                         "official_price": matched_json["official_price"]
                     }
                     
-                    #f = df.append(new_data, ignore_index=True)
                     df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
 
-                    logging.info(f"New post added: {post.title}")
+                    logging.info(f"New perfume added from post: {post.title}")
             except Exception as e:
                 logging.error(f"Error processing post: {e}")
         
         df.to_csv(CSV_FILE, index=False, encoding="utf-8")
+
+
